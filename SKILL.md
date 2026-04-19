@@ -450,7 +450,13 @@ result = client.predict(
 ### 多角度服装合并（推荐）
 当有多张不同角度的服装照片时，先合并再换装效果更好：
 
-```python
+**命令行方式**：
+```bash
+python ~/.hermes/skills/image-processing/virtual-try-on/scripts/combine_garments.py \
+  img1.jpg img2.jpg -o combined.png
+```
+
+**代码方式**：
 from PIL import Image
 
 def combine_garment_images(img_paths, output_path, direction='horizontal'):
