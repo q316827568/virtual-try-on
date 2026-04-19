@@ -438,6 +438,15 @@ result = client.predict(
 
 **⚠️ 无国内镜像方案**：HuggingFace Gradio Space 的 API 无法通过 hf-mirror.com 加速，必须使用代理访问。
 
+**视觉模型性价比对比**（2025-04-19 实测）：
+
+| 模型 | 输入价格 | 输出价格 | 性价比 |
+|------|---------|---------|--------|
+| qwen-vl-plus | 0.0008元/千tokens | 0.0008元/千tokens | ⭐⭐⭐⭐⭐ 最便宜 |
+| doubao-vision | 0.003元/千tokens | 0.006元/千tokens | ⭐⭐⭐⭐ |
+| hunyuan-vision | 0.008元/千tokens | 0.008元/千tokens | ⭐⭐⭐ |
+| qwen-vl-max | 0.02元/千tokens | 0.02元/千tokens | ⭐⭐ 最强但贵 |
+
 **API 响应速度对比**（2025-04-19 实测）：
 | API | 响应时间 | 处理时间 | 推荐度 |
 |-----|---------|---------|--------|
