@@ -360,21 +360,58 @@ def compress_image(input_path, output_path, max_size=1024, quality=85):
 
 ```
 SSLCertVerificationError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed
+httpcore.ConnectError: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol
 ```
 
-**原因**：代理环境导致 SSL 验证问题
+**原因**：代理环境导致 SSL 验证问题（常见于 Clash 等代理工具）
 
-**解决**：
+**解决方案**：
+
 ```python
-# 方案1：设置代理环境变量
+# 方案1：设置代理环境变量（推荐）
 import os
-os.environ['http_proxy'] = 'http://127.0.0.1:7897'
-os.environ['https_proxy'] = 'http://127.0.0.1:7897'
+os.environ['HTTP_PROXY'] = 'http://127.0.0.1:7897'
+os.environ['HTTPS_PROXY'] = 'http://127.0.0.1:7897'
 
-# 方案2：禁用 SSL 验证（仅测试用）
-import ssl
+# 方案2：禁用 urllib3 警告
 import urllib3
 urllib3.disable_warnings()
+
+# 方案3：为 httpx 单独配置（gradio_client 使用 httpx）
+import httpx
+httpx._config._DEFAULT_TIMEOUT_CONFIG = httpx.Timeout(120.0)
+
+# 方案4：重试逻辑（最实用）
+import time
+for attempt in range(5):
+    try:
+        client = Client("WeShopAI/WeShopAI-Virtual-Try-On", verbose=False)
+        result = client.predict(...)
+        break
+    except Exception:
+        time.sleep(2)
+
+# 方案5：切换代理模式
+# Clash: 规则模式 → 全局模式，或更换代理节点
+```
+
+**实测有效的组合**：
+```python
+import os
+import urllib3
+urllib3.disable_warnings()
+
+os.environ['HTTP_PROXY'] = 'http://127.0.0.1:7897'
+os.environ['HTTPS_PROXY'] = 'http://127.0.0.1:7897'
+
+from gradio_client import Client, handle_file
+
+client = Client("WeShopAI/WeShopAI-Virtual-Try-On", verbose=False)
+result = client.predict(
+    main_image=handle_file(garment_img),
+    background_image=handle_file(person_img),
+    api_name="/generate_image"
+)
 ```
 
 ### 4. 浏览器访问超时
