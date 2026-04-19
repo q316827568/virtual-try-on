@@ -394,3 +394,91 @@ urllib3.disable_warnings()
 - 仅供学习和研究使用
 - 遵守原始项目的 CC BY-NC-SA 4.0 许可证
 - 生成结果仅限个人使用，不要用于商业目的
+
+## 实战经验
+
+## 国内加速说明
+
+**⚠️ 无国内镜像方案**：HuggingFace Gradio Space 的 API 无法通过 hf-mirror.com 加速，必须使用代理访问。
+
+**API 响应速度对比**（2025-04-19 实测）：
+| API | 响应时间 | 处理时间 | 推荐度 |
+|-----|---------|---------|--------|
+| WeShopAI | ~1.3s | 30-60s | ⭐⭐⭐ 推荐 |
+| IDM-VTON | ~1.5s | 40-60s | ⭐⭐ |
+| Kolors | ~6s | 40-60s | ⭐ |
+
+**处理时间主要消耗在模型推理**（30-60秒），网络传输占比较小，优化代理对整体速度提升有限。
+
+### 多角度服装合并（推荐）
+当有多张不同角度的服装照片时，先合并再换装效果更好：
+
+```python
+from PIL import Image
+
+def combine_garment_images(img_paths, output_path, direction='horizontal'):
+    """合并多张服装图片"""
+    images = [Image.open(p) for p in img_paths]
+    
+    if direction == 'horizontal':
+        # 并排拼接
+        target_height = min(img.height for img in images)
+        resized = []
+        total_width = 0
+        for img in images:
+            ratio = target_height / img.height
+            new_w = int(img.width * ratio)
+            resized.append(img.resize((new_w, target_height), Image.LANCZOS))
+            total_width += new_w
+        combined = Image.new('RGB', (total_width, target_height))
+        x = 0
+        for img in resized:
+            combined.paste(img, (x, 0))
+            x += img.width
+    
+    combined.save(output_path, quality=95)
+    return output_path
+
+# 使用示例
+combine_garment_images(
+    ["/path/to/garment_angle1.jpg", "/path/to/garment_angle2.jpg"],
+    "/path/to/garment_combined.png"
+)
+```
+
+### 参数说明（易混淆）⚠️ 实测修正
+WeShopAI 的参数名称与实际功能**相反**：
+- `main_image`: **服装图片** - 要穿的服装
+- `background_image`: **人物照片** - 需要换装的人
+
+**实测验证**（2025-04-19）：要让图一的人穿上图二的白色连衣裙，需要：
+- main_image = 图二（服装）
+- background_image = 图一（人物）
+
+### 网络不稳定处理
+HuggingFace Space 连接可能超时或断开，建议添加重试逻辑：
+
+```python
+import time
+
+for attempt in range(3):
+    try:
+        client = Client("WeShopAI/WeShopAI-Virtual-Try-On", verbose=False)
+        result = client.predict(
+            main_image=handle_file(person_img),
+            background_image=handle_file(garment_img),
+            api_name="/generate_image"
+        )
+        break
+    except Exception as e:
+        print(f"尝试 {attempt+1}/3 失败")
+        if attempt < 2:
+            time.sleep(5)
+```
+
+### 代理配置（国内用户）
+```python
+import os
+os.environ['HTTP_PROXY'] = 'http://127.0.0.1:7897'
+os.environ['HTTPS_PROXY'] = 'http://127.0.0.1:7897'
+```
